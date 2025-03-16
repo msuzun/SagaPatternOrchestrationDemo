@@ -1,0 +1,6 @@
+@SagaPatternOrchestrationDemo_HostAddress = http://localhost:5228
+
+GET {{SagaPatternOrchestrationDemo_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
