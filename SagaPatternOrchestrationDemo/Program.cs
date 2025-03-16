@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using SagaPatternOrchestrationDemo.App;
+using SagaPatternOrchestrationDemo.Data;
 using SagaPatternOrchestrationDemo.Service;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +11,9 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(""));
 
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();

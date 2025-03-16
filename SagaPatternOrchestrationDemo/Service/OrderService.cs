@@ -1,10 +1,13 @@
-﻿using SagaPatternOrchestrationDemo.Model;
+﻿using SagaPatternOrchestrationDemo.Data;
+using SagaPatternOrchestrationDemo.Model;
 
 namespace SagaPatternOrchestrationDemo.Service
 {
     /// <summary>
     /// Sipariş oluşturma : Yeni sipariş saklar
     /// Sipariş iptal : Eğer işlem başarısız olursa, siparişi iptal eder
+    /// Güncelleme: In-Memory dictionary yerine veritabanı kullanılıyor.
+    /// Güncelleme: Sipariş ekleme ve iptal etme işlemleri EF CORE ile yönetildi
     /// </summary>
     public interface IOrderService
     {
@@ -13,23 +16,36 @@ namespace SagaPatternOrchestrationDemo.Service
     }
     public class OrderService : IOrderService
     {
-        private readonly Dictionary<Guid, OrderRequest> _orders = new();
+        private readonly ApplicationDbContext _context;
+
+        public OrderService(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
         public async Task CancelOrderAsync(Guid orderId)
         {
-            if (_orders.ContainsKey(orderId))
+
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order != null)
             {
-                _orders.Remove(orderId);
-                Console.WriteLine($"Order {orderId} cancelled");
-                await Task.CompletedTask;
+                order.IsCanceled = true;
+                await _context.SaveChangesAsync();
             }
         }
 
         public async Task<Guid> CreateOrderAsync(OrderRequest order)
         {
-            var orderId = order.OrderId;
-            _orders[orderId] = order;
-            Console.WriteLine($"Order {orderId} created");
-            return await Task.FromResult(orderId);
+            var newOrder = new Order
+            {
+                OrderId = order.OrderId,
+                ProductId = order.ProductId,
+                Amount = order.Amount
+            };
+
+            _context.Orders.Add(newOrder);
+            await _context.SaveChangesAsync();
+            return newOrder.OrderId;
         }
     }
 }

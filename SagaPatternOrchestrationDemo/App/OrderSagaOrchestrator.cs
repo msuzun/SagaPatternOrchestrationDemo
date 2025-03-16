@@ -1,4 +1,5 @@
-﻿using SagaPatternOrchestrationDemo.Model;
+﻿using SagaPatternOrchestrationDemo.Data;
+using SagaPatternOrchestrationDemo.Model;
 using SagaPatternOrchestrationDemo.Service;
 
 namespace SagaPatternOrchestrationDemo.App
@@ -13,17 +14,20 @@ namespace SagaPatternOrchestrationDemo.App
         private readonly IPaymentService _paymentService;
         private readonly IInventoryService _inventoryService;
         private readonly IShippingService _shippingService;
+        private readonly ApplicationDbContext _context;
 
-        public OrderSagaOrchestrator(IOrderService orderService, IPaymentService paymentService, IInventoryService inventoryService, IShippingService shippingService)
+        public OrderSagaOrchestrator(IOrderService orderService, IPaymentService paymentService, IInventoryService inventoryService, IShippingService shippingService, ApplicationDbContext context)
         {
             _orderService = orderService;
             _paymentService = paymentService;
             _inventoryService = inventoryService;
             _shippingService = shippingService;
+            _context = context;
         }
 
         public async Task<bool> ProcessOrderAsync(OrderRequest order)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 var orderId = await _orderService.CreateOrderAsync(order);
@@ -46,19 +50,16 @@ namespace SagaPatternOrchestrationDemo.App
                 {
                     throw new Exception("Shipping failed");
                 }
+                await transaction.CommitAsync();
                 return true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error: {ex.Message}");
-                await Roolback(order);
+                await transaction.RollbackAsync();
                 return false;
             }
         }
-        private async Task Roolback(OrderRequest order)
-        {
-            await _paymentService.RefundPaymentAsync(order.OrderId);
-            await _orderService.CancelOrderAsync(order.OrderId);
-        }
+        
     }
 }

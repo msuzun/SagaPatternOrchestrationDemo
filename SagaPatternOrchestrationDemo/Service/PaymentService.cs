@@ -1,8 +1,13 @@
-﻿namespace SagaPatternOrchestrationDemo.Service
+﻿using Microsoft.EntityFrameworkCore;
+using SagaPatternOrchestrationDemo.Data;
+using SagaPatternOrchestrationDemo.Model;
+
+namespace SagaPatternOrchestrationDemo.Service
 {
     /// <summary>
     /// Ödeme Alma : Sipariş için ödeme alınır.
     /// Ödeme İadesi : Eğer sipariş iptal edilirse, ödeme geri alınır.
+    /// Güncelleme : Ödeme bilgileri veritabanında tutuluyor
     /// </summary>
     public interface IPaymentService
     {
@@ -11,22 +16,42 @@
     }
     public class PaymentService : IPaymentService
     {
-        private readonly Dictionary<Guid, bool> _payments = new();
+        private readonly ApplicationDbContext _context;
+
+        public PaymentService(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
         public async Task<bool> ProccessPaymentService(Guid orderId)
         {
-            _payments[orderId] = true;
-            Console.WriteLine($"Payment for order {orderId} processed");
-            return await Task.FromResult(true);
+
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order == null) return false;
+
+            var payment = new Payment
+            {
+                PaymentId = Guid.NewGuid(),
+                OrderId = orderId,
+                Amount = order.Amount
+            };
+
+            _context.Payments.Add(payment);
+            await _context.SaveChangesAsync();
+
+            return true;
         }
+
 
         public async Task RefundPaymentAsync(Guid orderId)
         {
-            if (_payments.ContainsKey(orderId))
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            var payment = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == orderId);
+            if (payment != null)
             {
-                _payments.Remove(orderId);
-                Console.WriteLine($"Payment for order {orderId} refunded");
+                payment.IsRefunded = true;
+                await _context.SaveChangesAsync();
             }
-            await Task.CompletedTask;
         }
     }
 }

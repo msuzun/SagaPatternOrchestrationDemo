@@ -1,4 +1,6 @@
-﻿namespace SagaPatternOrchestrationDemo.Service
+﻿using SagaPatternOrchestrationDemo.Data;
+
+namespace SagaPatternOrchestrationDemo.Service
 {
     /// <summary>
     /// Stok Kontrolü : Ürün stok durumu kontrol edilir.
@@ -9,10 +11,17 @@
     }
     public class InventoryService : IInventoryService
     {
+        private readonly ApplicationDbContext _context;
+
+        public InventoryService(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
         public async Task<bool> CheckInventoryAsync(Guid productId)
         {
-            Console.WriteLine($"Inventory for product {productId} checked");
-            return await Task.FromResult(true);
+            var inventory = await _context.Inventories.FindAsync(productId);
+            return inventory != null && inventory.StockQuantity > 0;
         }
     }
 }
