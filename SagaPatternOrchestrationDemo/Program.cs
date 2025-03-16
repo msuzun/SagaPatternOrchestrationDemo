@@ -13,7 +13,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(""));
+    options.UseSqlServer("Server=DESKTOP-0VUFGVR;Database=SagaPatternDB;Trusted_Connection=True;TrustServerCertificate=True"));
 
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();

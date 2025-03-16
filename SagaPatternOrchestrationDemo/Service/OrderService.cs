@@ -11,7 +11,7 @@ namespace SagaPatternOrchestrationDemo.Service
     /// </summary>
     public interface IOrderService
     {
-        Task<Guid> CreateOrderAsync(OrderRequest order);
+        Task<OrderResponse> CreateOrderAsync(OrderRequest order);
         Task CancelOrderAsync(Guid orderId);
     }
     public class OrderService : IOrderService
@@ -34,7 +34,7 @@ namespace SagaPatternOrchestrationDemo.Service
             }
         }
 
-        public async Task<Guid> CreateOrderAsync(OrderRequest order)
+        public async Task<OrderResponse> CreateOrderAsync(OrderRequest order)
         {
             var newOrder = new Order
             {
@@ -45,7 +45,11 @@ namespace SagaPatternOrchestrationDemo.Service
 
             _context.Orders.Add(newOrder);
             await _context.SaveChangesAsync();
-            return newOrder.OrderId;
+            return new OrderResponse
+            {
+                OrderId = newOrder.OrderId,
+                ProductId = newOrder.ProductId,
+            };
         }
     }
 }

@@ -30,22 +30,27 @@ namespace SagaPatternOrchestrationDemo.App
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var orderId = await _orderService.CreateOrderAsync(order);
-                if (orderId == Guid.Empty)
+                var res = await _orderService.CreateOrderAsync(order);
+                if (res.OrderId == Guid.Empty)
                 {
                     throw new Exception("Order creation failed");
                 }
-                var paymentResult = await _paymentService.ProccessPaymentService(orderId);
+                var paymentResult = await _paymentService.ProccessPaymentService(res.OrderId);
                 if (!paymentResult)
                 {
                     throw new Exception("Payment failed");
                 }
-                var stockAvailable = await _inventoryService.CheckInventoryAsync(orderId);
+                var createStock = await _inventoryService.CreateInventoryAsync(res.ProductId,order.stockQuantity);
+                if (!createStock)
+                {
+                    throw new Exception("Create Inventory failded");
+                }
+                var stockAvailable = await _inventoryService.CheckInventoryAsync(res.OrderId);
                 if (!stockAvailable)
                 {
                     throw new Exception("Out of stock");
                 }
-                var shippingResult = await _shippingService.ShipOrderAsync(orderId);
+                var shippingResult = await _shippingService.ShipOrderAsync(res.OrderId);
                 if (!shippingResult)
                 {
                     throw new Exception("Shipping failed");
